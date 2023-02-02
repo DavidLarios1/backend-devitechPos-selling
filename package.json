@@ -1,0 +1,67 @@
+{
+  "name": "nodejs-arquetipo",
+  "version": "1.0.0",
+  "description": "arquetipo para nodejs",
+  "main": "./src/index.ts",
+  "scripts": {
+    "start:dev": "cross-env MODE=dev concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\"",
+    "build:clean": "rimraf build",
+    "start:production": "cross-env MODE=prod npm run build && node build/index.js",
+    "compile": "webpack --config webpack.config.ts",
+    "post:build": "ts-node-script scripts/postbuild.ts",
+    "build": "npm-run-all build:clean compile ",
+    "clean:pkg": "rimraf pkg",
+    "build:pkg": "pkg package.json --compress GZip --output ./pkg/pos-selling.exe",
+    "pkg": "npm-run-all build clean:pkg build:pkg"
+  },
+  "bin": "./build/pos-selling.js",
+  "pkg": {
+    "targets": [
+      "node14-win-x64"
+    ],
+    "scripts": "pos-selling.js"
+  },
+  "keywords": [
+    "arquetipo",
+    "nodejs"
+  ],
+  "author": "Larios David",
+  "license": "ISC",
+  "devDependencies": {
+    "@tsconfig/node14": "^1.0.3",
+    "@types/copy-webpack-plugin": "^8.0.1",
+    "@types/express": "^4.17.14",
+    "@types/node": "^18.11.10",
+    "@types/pg": "^8.6.5",
+    "@types/webpack-node-externals": "^2.5.3",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "concurrently": "^7.6.0",
+    "copy-webpack-plugin": "^9.0.1",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.28.0",
+    "eslint-config-airbnb-typescript": "^17.0.0",
+    "eslint-config-standard-with-typescript": "^23.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.5.1",
+    "eslint-plugin-promise": "^6.1.1",
+    "nodemon": "^2.0.20",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^3.0.2",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.3",
+    "webpack": "^5.6.0",
+    "webpack-cli": "^4.2.0",
+    "webpack-node-externals": "^2.5.2"
+  },
+  "dependencies": {
+    "@types/node-fetch": "^2.6.2",
+    "axios": "^0.21.0",
+    "colors": "^1.4.0",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "node-fetch": "^2.6.9",
+    "pg": "^8.8.0",
+    "ts-loader": "^9.4.1"
+  }
+}
