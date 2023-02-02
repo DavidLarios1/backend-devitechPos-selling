@@ -1,0 +1,8 @@
+node_modules
+
+dist
+pkg
+build
+
+environments/staging.env
+environments/prod.env
