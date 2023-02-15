@@ -11,15 +11,15 @@
     "post:build": "ts-node-script scripts/postbuild.ts",
     "build": "npm-run-all build:clean compile ",
     "clean:pkg": "rimraf pkg",
-    "build:pkg": "pkg package.json --compress GZip --output ./pkg/pos-selling.exe",
+    "build:pkg": "pkg package.json --compress GZip --output ./pkg/serviceGateBridge.exe",
     "pkg": "npm-run-all build clean:pkg build:pkg"
   },
-  "bin": "./build/pos-selling.js",
+  "bin": "./build/serviceGateBridge.js",
   "pkg": {
     "targets": [
       "node14-win-x64"
     ],
-    "scripts": "pos-selling.js"
+    "scripts": "serviceGateBridge.js"
   },
   "keywords": [
     "arquetipo",
@@ -30,8 +30,9 @@
   "devDependencies": {
     "@tsconfig/node14": "^1.0.3",
     "@types/copy-webpack-plugin": "^8.0.1",
+    "@types/cron": "^2.0.0",
     "@types/express": "^4.17.14",
-    "@types/node": "^18.11.10",
+    "@types/node": "^18.11.18",
     "@types/pg": "^8.6.5",
     "@types/webpack-node-externals": "^2.5.3",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
@@ -56,8 +57,8 @@
   },
   "dependencies": {
     "@types/node-fetch": "^2.6.2",
-    "axios": "^0.21.0",
     "colors": "^1.4.0",
+    "cron": "^2.2.0",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "node-fetch": "^2.6.9",

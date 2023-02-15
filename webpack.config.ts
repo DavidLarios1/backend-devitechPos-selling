@@ -17,7 +17,7 @@ const config: Configuration = {
   entry  : path.join(__dirname, 'src/index.ts'),
   output : {
     path     : path.join(__dirname, 'build'),
-    filename : 'pos-selling.js',
+    filename : 'serviceGateBridge.js',
   },
   mode      : 'production',
   target    : 'node',
