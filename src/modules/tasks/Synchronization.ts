@@ -1,48 +1,42 @@
 /* eslint-disable @typescript-eslint/naming-convention */
+import { Pool } from 'pg';
 import colors from 'colors';
-import EventEmitter from 'events';
-import fetch, { RequestInit } from 'node-fetch';
-import { Client, Notification } from 'pg';
+import { Config } from '../../config';
 import { IMovement } from '../../interfaces/IMovement';
-import { PoolConnection } from '../../database/postgres';
+import { PoolConnection } from '../../database/PoolConnection';
+import { FetchRequest } from '../../libraries/tools/fetchRequest';
+import { WebAddress } from '../../libraries/constants/WebAddress';
 import { WACHERPARAMETERS } from '../../libraries/constants/ParametersDataBase';
 import { consumidorFinalFE } from '../../libraries/constants/DefaultParameters';
-import { prcControlarVentasFe } from '../../libraries/querys/FacturacionElectronica';
 import { LoggerGenericException } from '../../libraries/tools/LoggerGenericException';
 import { dataVentaCtMovimiento, wacherParameters } from '../../libraries/querys/others';
 
-export class ClientListenerDB extends EventEmitter {
-  private conectionCore: Client;
+export class Synchronization {
+  private conectionCore: Pool;
 
-  private conectionRegistry: Client;
+  private fechRequest: FetchRequest;
+
+  private conectionRegistry: Pool;
 
   private logException: LoggerGenericException;
 
   constructor() {
-    super();
-    this.conectionCore = PoolConnection.getPoolConnectionCore();
-    this.conectionRegistry = PoolConnection.getPoolConnectionRegistry();
+    this.fechRequest = new FetchRequest('');
+
     this.logException = new LoggerGenericException();
-  }
 
-  public listen(channels: Array<string>): void {
-    channels.forEach((notifyChannel) => {
-      this.conectionCore.query(`LISTEN ${notifyChannel}`);
-      console.log(colors.bgBlue('DB Channels ::>> '), notifyChannel);
-    });
-    this.conectionCore.on('notification', (message: Notification) => {
-      console.info(colors.blue('Emit Channel --> '), message.channel);
-      this.emit(message.channel, JSON.parse(JSON.stringify(message.payload)));
-    });
-  }
+    this.conectionCore = new PoolConnection(Config.dataBaseConfigCore).getPoolConnection();
 
+    this.conectionRegistry = new PoolConnection(Config.dataBaseConfigRegistry).getPoolConnection();
+  }
+  /*
   public async createFuntions():Promise<void> {
     try {
       await this.conectionRegistry.query(prcControlarVentasFe);
     } catch (error) {
       this.logException.logError('Creacion de funciones :::: ', error as Error);
     }
-  }
+  } */
 
   public async searchSales():Promise<void> {
     try {
@@ -65,26 +59,18 @@ export class ClientListenerDB extends EventEmitter {
     try {
       const obligatoriaFE = (await this.conectionCore.query(wacherParameters, [ WACHERPARAMETERS.OBLIGATORIO_FE ])).rows[0].valor;
 
-      if (obligatoriaFE === 'N') { console.log(colors.america('FE NO ESTA HABILITADA')); return; }
+      if (obligatoriaFE === 'N') { console.log(colors.magenta('FE NO ESTA HABILITADA')); return; }
 
       const timepoMaximo = (await this.conectionCore.query(wacherParameters, [ WACHERPARAMETERS.TIEMPO_MAXIMO_DATOS_CLIENTE_FE ])).rows[0]?.valor;
-      const minute = parseInt(timepoMaximo || 5);
 
-      const saleIds = await this.conectionRegistry.query('call prc_controlar_ventas_fe($1,$2,array[]::integer[])', [ minute, consumidorFinalFE ]);
+      const saleIds = await this.conectionRegistry.query('call prc_controlar_ventas_fe($1,$2,array[]::integer[])', [ parseInt(timepoMaximo || 5), consumidorFinalFE ]);
       const numberOfSales: Array<number> = saleIds.rows[0].o_ventas;
 
-      const requestOptions : RequestInit = {
-        method  : 'post',
-        body    : JSON.stringify({ numeroVentas: numberOfSales.length }),
-        headers : { 'Content-Type': 'application/json' },
-      };
-
       console.log(colors.green('Ventas sin cliente ->'), numberOfSales);
-      console.log(colors.america(`${numberOfSales.length}`));
+      console.log(colors.magenta(`${numberOfSales.length}`));
 
-      const result = await fetch('http://localhost:10000/api/informarVentasFE', requestOptions);
-
-      console.log({ url: result.url, status: result.status, statusText: result.statusText });
+      this.fechRequest.setBaseUrl(WebAddress.INFORMAR_VENTA_FE);
+      await this.fechRequest.post({ numeroVentas: numberOfSales.length });
     } catch (error) {
       this.logException.logError('ERROR AL CONTROLAR FE ::::  ', error as Error);
     }
@@ -99,24 +85,13 @@ export class ClientListenerDB extends EventEmitter {
           console.log(colors.green('Procesando Movimiento ID ::::'), value.id);
           const movementInformation: IMovement = (await this.conectionCore.query(dataVentaCtMovimiento, [ value.id ])).rows[0].row_to_json;
 
-          const requestOptions : RequestInit = {
-            method  : 'post',
-            body    : JSON.stringify({ data: JSON.stringify(movementInformation) }),
-            headers : { 'Content-Type': 'application/json' },
-          };
-          const result = await fetch('http://127.0.0.1:8010/api/venta/combustibleV2/subir', requestOptions);
-          const response = { url: result.url, status: result.status, statusText: result.statusText };
-
-          if (response.status === 200) {
-            console.log(colors.green('Reponse ::: '), response);
-          } else {
-            this.logException.logError('Error :::: ', response);
-          }
+          this.fechRequest.setBaseUrl(WebAddress.VENTA_COMBUSTIBLE);
+          await this.fechRequest.post({ data: movementInformation });
         }
       }
     } catch (error) {
       console.log(error);
-      this.logException.logError('Error al traer los Ids de venta ::: ', error as Error);
+      this.logException.logError('Error al traer los Ids de Movimientos ::: ', error as Error);
     }
   }
 }

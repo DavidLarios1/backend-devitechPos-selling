@@ -4,11 +4,11 @@ as $procedure$
   declare 
   movimiento  record;
 begin
-  for movimiento in (select id, fecha_generado  from transmision where sincronizado = 3 order by id asc) loop
+  for movimiento in (select id, fecha_generado  from transmision t where t.sincronizado = 3 and t.fecha_generado >= DATE_TRUNC('day', CURRENT_DATE - INTERVAL '3 days') order by id asc) loop
    if (select (extract(EPOCH from NOW() - movimiento.fecha_generado) / 60 > i_tiempo_reenvio) ) 
     then
-       raise notice 'Actualizando registro %', movimiento.id;
-      update transmision set sincronizado=2,request = jsonb_set(request::jsonb , '{cliente}', i_cliente_defecto::jsonb)  where id= movimiento.id;
+      raise notice 'Actualizando registro %', movimiento.id;
+      update transmision set sincronizado=2, request = jsonb_set(request::jsonb , '{cliente}', i_cliente_defecto::jsonb)  where id= movimiento.id;
      else
         o_ventas:= array_append(o_ventas, movimiento.id);
     end if;
